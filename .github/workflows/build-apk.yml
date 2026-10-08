@@ -28,6 +28,57 @@ jobs:
           targets: aarch64-linux-android
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
+      - name: Fix Wi-Fi IP for AirPrint
+        working-directory: source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          kt = Path("android/app/src/main/kotlin/com/inkprint/app/PrinterService.kt")
+          s = kt.read_text()
+          old = "        val started = try {\n            startServer("
+          new = """        // Prefer Android's actual Wi-Fi IPv4 over VPN or virtual interfaces.
+        val wifiIp = try {
+            @Suppress("DEPRECATION")
+            val raw = wifiManager.connectionInfo.ipAddress
+            if (raw == 0) null else (0..3).joinToString(".") {
+                ((raw ushr (it * 8)) and 255).toString()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Wi-Fi IP unavailable", e)
+            null
+        }
+        try {
+            if (wifiIp != null) {
+                android.system.Os.setenv("INKPRINT_WIFI_IP", wifiIp, true)
+            } else {
+                android.system.Os.unsetenv("INKPRINT_WIFI_IP")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Cannot set Wi-Fi IP override", e)
+        }
+
+        val started = try {
+            startServer("""
+          assert s.count(old) == 1, "Android source changed"
+          kt.write_text(s.replace(old, new, 1))
+
+          rs = Path("inkprint-core/src/server/listener.rs")
+          s = rs.read_text()
+          old = "pub fn get_local_ip() -> Ipv4Addr {\n"
+          new = """pub fn get_local_ip() -> Ipv4Addr {
+              if let Ok(value) = std::env::var("INKPRINT_WIFI_IP") {
+                  if let Ok(ip) = value.parse::<Ipv4Addr>() {
+                      if ip.is_private() && !ip.is_loopback() {
+                          return ip;
+                      }
+                  }
+              }
+          """
+          assert s.count(old) == 1, "Rust source changed"
+          rs.write_text(s.replace(old, new, 1))
+          print("Wi-Fi IP patch applied")
+          PY
       - name: Build APK
         working-directory: source
         run: |
