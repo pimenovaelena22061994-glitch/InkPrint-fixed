@@ -38,8 +38,8 @@ jobs:
           "com/inkprint/app/PrinterService.kt"
           s = kt.read_text()
           old = "        val started = try {\n            startServer("
-          new = """        // Prefer Android's actual Wi-Fi IPv4 
-          over VPN or virtual interfaces.
+          new = """        // Prefer Android Wi-Fi IPv4 address.
+          // Ignore VPN and virtual interfaces.
           val wifiIp = try {
             @Suppress("DEPRECATION")
             val raw = wifiManager.connectionInfo.ipAddress
