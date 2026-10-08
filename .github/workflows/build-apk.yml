@@ -29,8 +29,13 @@ jobs:
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
       - name: Build APK
-        working-directory: source 
-        run: make android-debug
+        working-directory: source
+        run: |
+          unset RUSTC
+          unset ANDROID_NDK_HOME
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/29.0.14206865"
+          export RUSTUP_TOOLCHAIN=nightly
+          make android-debug
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
