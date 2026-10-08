@@ -34,31 +34,34 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          kt = Path("android/app/src/main/kotlin/com/inkprint/app/PrinterService.kt")
+          kt = Path("android/app/src/main/kotlin/com/inkprint/
+          app/PrinterService.kt")
           s = kt.read_text()
           old = "        val started = try {\n            startServer("
-          new = """        // Prefer Android's actual Wi-Fi IPv4 over VPN or virtual interfaces.
-        val wifiIp = try {
+          new = """        // Prefer Android's actual Wi-Fi IPv4 
+          over VPN or virtual interfaces.
+          val wifiIp = try {
             @Suppress("DEPRECATION")
             val raw = wifiManager.connectionInfo.ipAddress
             if (raw == 0) null else (0..3).joinToString(".") {
                 ((raw ushr (it * 8)) and 255).toString()
             }
-        } catch (e: Exception) {
+            } catch (e: Exception) {
             Log.w(TAG, "Wi-Fi IP unavailable", e)
             null
-        }
-        try {
+            }
+            try {
             if (wifiIp != null) {
                 android.system.Os.setenv("INKPRINT_WIFI_IP", wifiIp, true)
             } else {
                 android.system.Os.unsetenv("INKPRINT_WIFI_IP")
             }
-        } catch (e: Exception) {
+            } catch (e: Exception) {
             Log.w(TAG, "Cannot set Wi-Fi IP override", e)
-        }
+            }
 
-        val started = try {
+         
+            val started = try {
             startServer("""
           assert s.count(old) == 1, "Android source changed"
           kt.write_text(s.replace(old, new, 1))
