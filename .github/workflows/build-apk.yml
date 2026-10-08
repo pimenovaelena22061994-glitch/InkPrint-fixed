@@ -34,8 +34,8 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          kt = Path("android/app/src/main/kotlin/com/inkprint/
-          app/PrinterService.kt")
+          kt = Path("android/app/src/main/kotlin") / \
+          "com/inkprint/app/PrinterService.kt"
           s = kt.read_text()
           old = "        val started = try {\n            startServer("
           new = """        // Prefer Android's actual Wi-Fi IPv4 
